@@ -1069,16 +1069,23 @@ def _correlation_me_2t(H, state0, tlist, taulist, c_ops, a_op, b_op, c_op,
     rho_t = mesolve(H, rho0, tlist, c_ops, [],
                     args=args, options=options).states
     corr_mat = np.zeros([np.size(tlist), np.size(taulist)], dtype=complex)
+    # if b_op is a list
+    if isinstance(b_op, list):
+        corr_mat = np.zeros([np.size(tlist), np.size(taulist), len(b_op)],
+                            dtype=complex)
+    else:
+        # catch case where b_op is a single operator
+        b_op = [b_op]
     taulist = np.asarray(taulist)
     if config.tdname:
         _cython_build_cleanup(config.tdname)
     rhs_clear()
 
     for t_idx, rho in enumerate(rho_t):
-        corr_mat[t_idx, :] = mesolve(
+        corr_mat[t_idx,:]  = np.squeeze(np.transpose(mesolve(
             H, c_op * rho * a_op, taulist + tlist[t_idx], c_ops,
-            [b_op], args=args, options=options
-        ).expect[0]
+            b_op, args=args, options=options
+        ).expect))
 
         if t_idx == 1:
             options.rhs_reuse = True
